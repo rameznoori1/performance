@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ردیاب بهره‌وری</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.1.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-primary { background-color: #4f46e5; color: white; }
+        .btn-primary:hover { background-color: #4338ca; }
+        .btn-secondary { background-color: #e5e7eb; color: #374151; }
+        .btn-secondary:hover { background-color: #d1d5db; }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-success { background-color: #22c55e; color: white; }
+        .btn-warning { background-color: #f97316; color: white; }
+        .tab-btn {
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-bottom: 4px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+        }
+        .hidden { display: none; }
+        .focus-1 { background-color: #ef4444; } /* red */
+        .focus-2 { background-color: #f97316; } /* orange */
+        .focus-3 { background-color: #facc15; } /* yellow */
+        .focus-4 { background-color: #84cc16; } /* lime */
+        .focus-5 { background-color: #22c55e; } /* green */
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="mt-4 text-lg font-bold text-gray-700">در حال اتصال به سرور...</p>
+        </div>
+    </div>
+    <div class="max-w-7xl mx-auto opacity-0 transition-opacity duration-500" id="main-content">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">داشبورد بهره‌وری شما</h1>
+            <p class="text-gray-600 mt-2">عملکرد روزانه‌تان را ثبت، تحلیل و بهینه کنید.</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="flex justify-center border-b mb-8">
+            <button id="productivity-tab-btn" class="tab-btn active">ابزارهای بهره‌وری</button>
+            <button id="report-tab-btn" class="tab-btn">گزارش روزانه</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="tab-content">
+            <!-- Productivity Tab -->
+            <div id="productivity-view">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1 space-y-8">
+                        <!-- Live Task Logger -->
+                        <div class="card">
+                            <h2 class="text-2xl font-bold mb-4">ثبت فعالیت زنده</h2>
+                            <input id="task-name" type="text" placeholder="الان روی چه کاری تمرکز کرده‌اید؟" class="w-full p-2 border rounded-lg mb-4">
+                            <select id="task-category-live" class="w-full p-2 border rounded-lg mb-4"></select>
+                            <div class="flex items-center justify-between">
+                                <button id="start-btn" class="btn btn-primary">شروع</button>
+                                <button id="stop-btn" class="btn btn-danger" disabled>پایان</button>
+                                <span id="timer" class="text-xl font-mono font-bold text-gray-700">00:00:00</span>
+                            </div>
+                        </div>
+                        <!-- Manual Task Logger -->
+                        <div class="card">
+                            <h2 class="text-2xl font-bold mb-4">ثبت فعالیت دستی</h2>
+                            <input id="manual-task-name" type="text" placeholder="نام فعالیت انجام شده" class="w-full p-2 border rounded-lg mb-2">
+                            <select id="manual-task-category" class="w-full p-2 border rounded-lg mb-4"></select>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <input id="manual-minutes" type="number" placeholder="دقیقه" min="0" class="w-full p-2 border rounded-lg">
+                                <input id="manual-seconds" type="number" placeholder="ثانیه" min="0" max="59" class="w-full p-2 border rounded-lg">
+                            </div>
+                            <button id="manual-add-btn" class="btn btn-primary w-full">ثبت دستی</button>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-1 space-y-8">
+                        <!-- Daily Goals -->
+                        <div class="card">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-2xl font-bold">اهداف مهم امروز</h2>
+                                <button id="add-goal-btn" class="btn btn-primary btn-sm p-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                                </button>
+                            </div>
+                            <div id="daily-goals" class="space-y-2"></div>
+                        </div>
+                        <!-- Category Management -->
+                        <div class="card">
+                            <h2 class="text-2xl font-bold mb-4">مدیریت دسته‌بندی‌ها</h2>
+                            <div class="flex gap-2 mb-4">
+                                <input id="new-category-name" type="text" placeholder="نام دسته‌بندی جدید" class="w-full p-2 border rounded-lg">
+                                <button id="add-category-btn" class="btn btn-primary">افزودن</button>
+                            </div>
+                            <div id="category-list" class="space-y-2"></div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-1 space-y-8">
+                        <!-- Pomodoro Timer -->
+                        <div class="card text-center">
+                            <h2 class="text-2xl font-bold mb-4">تایمر پومودورو</h2>
+                            <div id="pomodoro-timer" class="text-6xl font-bold text-indigo-600 mb-4">25:00</div>
+                            <div class="space-x-2 space-x-reverse">
+                                <button id="pomodoro-start" class="btn btn-success">شروع</button>
+                                <button id="pomodoro-pause" class="btn btn-secondary">توقف</button>
+                                <button id="pomodoro-reset" class="btn btn-danger">ریست</button>
+                            </div>
+                        </div>
+                        <!-- Distraction Logger -->
+                        <div class="card text-center">
+                            <h2 class="text-2xl font-bold mb-4">ردیاب حواس‌پرتی</h2>
+                            <button id="distraction-btn" class="btn btn-warning w-full text-lg">حواسم پرت شد!</button>
+                            <div class="flex justify-center items-center mt-4">
+                                <p class="text-gray-600">تعداد: <span id="distraction-count" class="font-bold text-xl text-red-500">0</span></p>
+                                <button id="decrease-distraction-btn" class="btn btn-secondary btn-sm p-2 mr-4">-</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Tab -->
+            <div id="report-view" class="hidden">
+                 <div class="card mb-8">
+                    <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                        <button id="prev-day-btn" class="btn btn-secondary">روز قبل</button>
+                        <input type="date" id="report-date-picker" class="p-2 border rounded-lg text-center">
+                        <button id="next-day-btn" class="btn btn-secondary">روز بعد</button>
+                    </div>
+                 </div>
+                 <div id="report-content" class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <!-- Report content will be injected here -->
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "AIzaSyBpgySrjbA3YMcoRWmB7NR6_trhQ_AdcwU",
+                authDomain: "performance-980e1.firebaseapp.com",
+                projectId: "performance-980e1",
+                storageBucket: "performance-980e1.firebasestorage.app",
+                messagingSenderId: "590374698817",
+                appId: "1:590374698817:web:08b0878e132fa37f83abc0"
+            };
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // --- Firebase Initialization ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let userId; 
+        let isAppReady = false;
+
+        // --- State Management ---
+        let activeTask = null, timerInterval = null, pieChart = null, timelineChart = null;
+        let pomodoroInterval = null;
+        let activities = [], categories = [], dailyGoals = []; // State for TODAY
+        let distractionCount = 0, pomodoroTime = 25 * 60;
+        let isPomodoroWork = true, isPomodoroPaused = true;
+        let selectedReportDate = new Date();
+
+        // --- UI Elements ---
+        const ui = {
+            loadingOverlay: document.getElementById('loading-overlay'),
+            mainContent: document.getElementById('main-content'),
+            taskName: document.getElementById('task-name'),
+            startBtn: document.getElementById('start-btn'),
+            stopBtn: document.getElementById('stop-btn'),
+            timer: document.getElementById('timer'),
+            manualTaskName: document.getElementById('manual-task-name'),
+            manualMinutes: document.getElementById('manual-minutes'),
+            manualSeconds: document.getElementById('manual-seconds'),
+            manualAddBtn: document.getElementById('manual-add-btn'),
+            distractionBtn: document.getElementById('distraction-btn'),
+            distractionCount: document.getElementById('distraction-count'),
+            decreaseDistractionBtn: document.getElementById('decrease-distraction-btn'),
+            dailyGoals: document.getElementById('daily-goals'),
+            addGoalBtn: document.getElementById('add-goal-btn'),
+            pomodoroTimer: document.getElementById('pomodoro-timer'),
+            pomodoroStart: document.getElementById('pomodoro-start'),
+            pomodoroPause: document.getElementById('pomodoro-pause'),
+            pomodoroReset: document.getElementById('pomodoro-reset'),
+            newCategoryName: document.getElementById('new-category-name'),
+            addCategoryBtn: document.getElementById('add-category-btn'),
+            categoryList: document.getElementById('category-list'),
+            taskCategoryLive: document.getElementById('task-category-live'),
+            manualTaskCategory: document.getElementById('manual-task-category'),
+            productivityTabBtn: document.getElementById('productivity-tab-btn'),
+            reportTabBtn: document.getElementById('report-tab-btn'),
+            productivityView: document.getElementById('productivity-view'),
+            reportView: document.getElementById('report-view'),
+            reportContent: document.getElementById('report-content'),
+            reportDatePicker: document.getElementById('report-date-picker'),
+            prevDayBtn: document.getElementById('prev-day-btn'),
+            nextDayBtn: document.getElementById('next-day-btn'),
+        };
+        
+        Chart.register(ChartDataLabels);
+
+        // --- Utility & Firebase Functions ---
+        const toDateString = (date) => date.toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const formatTime = s => `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+        const formatPomodoroTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+        
+        async function loadDataForDate(date) {
+            if (!userId) return { activities: [], dailyGoals: [], distractionCount: 0 };
+            try {
+                const dateStr = toDateString(date);
+                const dailyDocRef = doc(db, "artifacts", appId, "users", userId, "days", dateStr);
+                const dailyDocSnap = await getDoc(dailyDocRef);
+
+                if (dailyDocSnap.exists()) {
+                    const data = dailyDocSnap.data();
+                    return {
+                        activities: data.activities || [],
+                        dailyGoals: data.dailyGoals || [],
+                        distractionCount: data.distractionCount || 0
+                    };
+                }
+                return { activities: [], dailyGoals: [], distractionCount: 0 };
+            } catch (error) {
+                console.error("Error loading data for date:", error);
+                return { activities: [], dailyGoals: [], distractionCount: 0 };
+            }
+        }
+
+        async function loadInitialData() {
+            if (!userId) return;
+            // Load today's data into main state
+            const todayData = await loadDataForDate(new Date());
+            activities = todayData.activities;
+            dailyGoals = todayData.dailyGoals;
+            distractionCount = todayData.distractionCount;
+
+            // Load settings
+            const settingsDocRef = doc(db, "artifacts", appId, "users", userId, "settings", "main");
+            const settingsDocSnap = await getDoc(settingsDocRef);
+            if (settingsDocSnap.exists()) {
+                categories = settingsDocSnap.data().categories || [];
+            }
+            if (!categories || categories.length === 0) {
+                categories = [
+                    { id: Date.now() + 1, name: 'کار عمیق' }, { id: Date.now() + 2, name: 'کار سطحی' },
+                    { id: Date.now() + 3, name: 'جلسه' }, { id: Date.now() + 4, name: 'استراحت' }
+                ];
+                await setDoc(settingsDocRef, { categories });
+            }
+            
+            isAppReady = true;
+            updateUI(); // Update productivity tab UI
+            if (dailyGoals.length === 0 && toDateString(new Date()) === toDateString(selectedReportDate)) {
+                promptForDailyGoals();
+            }
+        }
+        
+        async function saveStateToFirestore() {
+            if (!isAppReady) return;
+            try {
+                const todayStr = toDateString(new Date());
+                const dailyDocRef = doc(db, "artifacts", appId, "users", userId, "days", todayStr);
+                const settingsDocRef = doc(db, "artifacts", appId, "users", userId, "settings", "main");
+                
+                await setDoc(dailyDocRef, { activities, dailyGoals, distractionCount }, { merge: true });
+                await setDoc(settingsDocRef, { categories });
+            } catch (error) {
+                console.error("Error saving data to Firestore:", error);
+                Swal.fire('خطا', 'مشکلی در ذخیره اطلاعات در سرور پیش آمد.', 'error');
+            }
+        }
+
+        // --- Core Logic ---
+        const startTimer = () => {
+            const taskName = ui.taskName.value.trim();
+            const categoryId = ui.taskCategoryLive.value;
+            if (!taskName || !categoryId) { Swal.fire('خطا', 'لطفا نام و دسته‌بندی فعالیت را مشخص کنید.', 'error'); return; }
+            activeTask = { id: Date.now(), name: taskName, categoryId: parseInt(categoryId), startTime: new Date().toISOString() };
+            ui.startBtn.disabled = true; ui.stopBtn.disabled = false; ui.taskName.disabled = true; ui.taskCategoryLive.disabled = true;
+            let seconds = 0;
+            timerInterval = setInterval(() => ui.timer.textContent = formatTime(++seconds), 1000);
+        };
+
+        const stopTimer = async () => {
+            clearInterval(timerInterval); timerInterval = null;
+            const focus = await promptForFocus();
+            if (focus === null) { resetLoggerUI(); return; }
+            const completedTask = {
+                ...activeTask,
+                endTime: new Date().toISOString(),
+                duration: Math.round((new Date() - new Date(activeTask.startTime)) / 1000),
+                focus,
+                timestamp: new Date().toISOString()
+            };
+            activities.push(completedTask);
+            await saveStateToFirestore();
+            activeTask = null;
+            resetLoggerUI();
+            updateUI();
+        };
+
+        const addManualTask = async () => {
+            const name = ui.manualTaskName.value.trim();
+            const categoryId = ui.manualTaskCategory.value;
+            const duration = (parseInt(ui.manualMinutes.value) || 0) * 60 + (parseInt(ui.manualSeconds.value) || 0);
+            if (!name || !categoryId || duration <= 0) { Swal.fire('خطا', 'لطفاً تمام فیلدها را به درستی پر کنید.', 'error'); return; }
+            const focus = await promptForFocus();
+            if (focus === null) return;
+            const task = {
+                id: Date.now(), name, categoryId: parseInt(categoryId), duration, focus, manual: true, timestamp: new Date().toISOString()
+            };
+            activities.push(task);
+            await saveStateToFirestore();
+            ui.manualTaskName.value = ui.manualMinutes.value = ui.manualSeconds.value = ui.manualTaskCategory.value = '';
+            updateUI();
+        };
+        
+        const promptForFocus = async () => {
+            const { value: focus } = await Swal.fire({
+                title: 'امتیاز به عملکرد', text: 'سطح تمرکز و انرژی شما چقدر بود؟', icon: 'question', input: 'radio',
+                inputOptions: { '1': '۱ (خیلی بد)', '2': '۲ (بد)', '3': '۳ (متوسط)', '4': '۴ (خوب)', '5': '۵ (عالی)' },
+                inputValidator: (v) => !v && 'شما باید یک گزینه را انتخاب کنید!',
+                confirmButtonText: 'ثبت امتیاز', cancelButtonText: 'لغو', showCancelButton: true,
+            });
+            return focus ? parseInt(focus) : null;
+        };
+        
+        const promptForDailyGoals = async () => {
+            if (dailyGoals.length > 0) return;
+            const { value: text } = await Swal.fire({
+                title: 'اهداف مهم امروز', input: 'textarea', inputPlaceholder: 'هر هدف را در یک خط بنویسید...',
+                confirmButtonText: 'شروع روز', allowOutsideClick: false,
+            });
+            if (text) {
+                dailyGoals = text.split('\n').filter(g => g.trim() !== '').map(g => ({ text: g, completed: false, date: new Date().toISOString() }));
+                await saveStateToFirestore();
+                updateUI();
+            }
+        };
+
+        // --- Goal Management ---
+        const addGoal = async () => {
+            const { value: text } = await Swal.fire({
+                title: 'افزودن هدف جدید', input: 'text', inputPlaceholder: 'متن هدف را وارد کنید',
+                showCancelButton: true, confirmButtonText: 'افزودن', cancelButtonText: 'لغو'
+            });
+            if (text && text.trim()) {
+                dailyGoals.push({ text, completed: false, date: new Date().toISOString() });
+                await saveStateToFirestore();
+                updateUI();
+            }
+        };
+
+        const editGoal = async (index) => {
+            const { value: text } = await Swal.fire({
+                title: 'ویرایش هدف', input: 'text', inputValue: dailyGoals[index].text,
+                showCancelButton: true, confirmButtonText: 'ذخیره', cancelButtonText: 'لغو'
+            });
+            if (text && text.trim()) {
+                dailyGoals[index].text = text;
+                await saveStateToFirestore();
+                updateUI();
+            }
+        };
+
+        const deleteGoal = async (index) => {
+            dailyGoals.splice(index, 1);
+            await saveStateToFirestore();
+            updateUI();
+        };
+        
+        const toggleGoalCompletion = async (index) => {
+            dailyGoals[index].completed = !dailyGoals[index].completed;
+            await saveStateToFirestore();
+            updateUI();
+        }
+
+        // --- UI Update Functions ---
+        const resetLoggerUI = () => {
+            ui.timer.textContent = '00:00:00'; ui.taskName.value = '';
+            ui.startBtn.disabled = false; ui.stopBtn.disabled = true;
+            ui.taskName.disabled = false; ui.taskCategoryLive.disabled = false;
+        };
+
+        const updateUI = () => { // Updates the productivity tab
+            renderGoals();
+            renderCategories();
+            ui.distractionCount.textContent = distractionCount;
+        };
+
+        const deleteTask = async (taskId, date) => {
+            const { isConfirmed } = await Swal.fire({
+                title: 'آیا مطمئن هستید؟', text: "این فعالیت برای همیشه حذف خواهد شد!", icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6',
+                confirmButtonText: 'بله، حذف کن!', cancelButtonText: 'لغو'
+            });
+
+            if (isConfirmed) {
+                if (toDateString(date) === toDateString(new Date())) {
+                    activities = activities.filter(act => act.id !== taskId);
+                    await saveStateToFirestore();
+                    displayReportForDate(date);
+                } else {
+                    let pastData = await loadDataForDate(date);
+                    pastData.activities = pastData.activities.filter(act => act.id !== taskId);
+                    const dailyDocRef = doc(db, "artifacts", appId, "users", userId, "days", toDateString(date));
+                    await setDoc(dailyDocRef, pastData, { merge: true });
+                    displayReportForDate(date);
+                }
+                Swal.fire('حذف شد!', 'فعالیت با موفقیت حذف شد.', 'success');
+            }
+        };
+
+        const renderReportContent = (data, date) => {
+            const { activities: reportActivities } = data;
+            
+            ui.reportContent.innerHTML = `
+                <div class="space-y-8">
+                    <div class="card">
+                        <h3 class="text-xl font-bold mb-4 text-center">زمان صرف‌شده بر اساس دسته‌بندی</h3>
+                        <div class="h-64 md:h-80 mx-auto" style="max-width: 400px;"><canvas id="report-pie-chart"></canvas></div>
+                    </div>
+                    <div class="card">
+                         <h3 class="text-xl font-bold mb-4 text-center">سطح تمرکز در طول روز</h3>
+                         <div class="h-64 md:h-80 mx-auto" style="max-width: 600px;"><canvas id="report-timeline-chart"></canvas></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4">لیست فعالیت‌ها (${new Date(date).toLocaleDateString('fa-IR')})</h2>
+                    <div id="report-activity-log" class="space-y-4 max-h-[600px] overflow-y-auto pr-2"></div>
+                </div>
+            `;
+
+            const pieCtx = document.getElementById('report-pie-chart').getContext('2d');
+            const timelineCtx = document.getElementById('report-timeline-chart').getContext('2d');
+            renderChartsForReport(pieCtx, timelineCtx, reportActivities);
+            
+            const logEl = document.getElementById('report-activity-log');
+            renderActivityLogForReport(logEl, reportActivities, date);
+        };
+
+        const renderActivityLogForReport = (element, logActivities, date) => {
+            element.innerHTML = logActivities.length === 0 ? '<p class="text-gray-500 text-center">فعالیتی برای این روز ثبت نشده است.</p>' : 
+            [...logActivities].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).map(task => {
+                const category = categories.find(c => c.id === task.categoryId);
+                const focusStars = [...Array(5)].map((_, i) => `<svg class="h-5 w-5 ${i < task.focus ? 'text-yellow-400' : 'text-gray-300'}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>`).join('');
+                return `
+                <div class="relative pb-4 pr-8 border-r-2 border-gray-200 group">
+                    <div class="absolute right-[-9px] top-1 w-4 h-4 rounded-full border-2 border-white focus-${task.focus}"></div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-gray-800">${task.name}</p>
+                            <p class="text-sm text-gray-500">${category?.name || 'بدون دسته'} - ${formatTime(task.duration)}</p>
+                        </div>
+                        <div class="flex items-center">
+                            ${focusStars}
+                            <button class="delete-task-btn text-gray-400 hover:text-red-600 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" data-task-id="${task.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            element.querySelectorAll('.delete-task-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const taskId = parseInt(e.currentTarget.dataset.taskId);
+                    deleteTask(taskId, date);
+                });
+            });
+        };
+
+        const renderChartsForReport = (pieCtx, timelineCtx, reportActivities) => {
+            const categoryData = categories.map(cat => ({
+                name: cat.name,
+                duration: reportActivities.filter(a => a.categoryId === cat.id).reduce((sum, a) => sum + a.duration, 0)
+            })).filter(c => c.duration > 0);
+
+            if (pieChart) pieChart.destroy();
+            pieChart = new Chart(pieCtx, {
+                type: 'pie', data: { labels: categoryData.map(c => c.name), datasets: [{ data: categoryData.map(c => c.duration), backgroundColor: ['#4f46e5','#f97316','#22c55e','#ef4444','#facc15','#6b7280'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: {
+                    tooltip: { callbacks: { label: c => `${c.label || ''}: ${((c.parsed / c.chart.getDatasetMeta(0).total) * 100).toFixed(1)}%` } },
+                    datalabels: {
+                        formatter: (v, ctx) => {
+                            const total = ctx.chart.getDatasetMeta(0).total;
+                            if (total === 0) return '0%';
+                            const p = (v / total) * 100;
+                            return p < 5 ? '' : p.toFixed(1) + "%";
+                        },
+                        color: '#fff', font: { weight: 'bold', size: 14 }
+                    }
+                }}
+            });
+
+            const timelineData = [...reportActivities].sort((a, b) => {
+                const timeA = new Date(a.startTime || a.timestamp);
+                const timeB = new Date(b.startTime || b.timestamp);
+                return timeA - timeB;
+            });
+
+            if (timelineChart) timelineChart.destroy();
+            timelineChart = new Chart(timelineCtx, {
+                type: 'bar',
+                data: {
+                    labels: timelineData.map(a => new Date(a.startTime || a.timestamp).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })),
+                    datasets: [{ label: 'سطح تمرکز', data: timelineData.map(a => a.focus), backgroundColor: timelineData.map(a => `hsl(${(a.focus - 1) * 30}, 80%, 60%)`) }]
+                },
+                options: { scales: { y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } } }, responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return timelineData[index].name;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+        
+        const renderGoals = () => {
+            ui.dailyGoals.innerHTML = dailyGoals.length === 0 ? '<p class="text-gray-500 text-center">هنوز هدفی برای امروز تعیین نکرده‌اید.</p>' :
+            dailyGoals.map((goal, index) => `
+                <div class="flex items-center p-3 bg-gray-50 rounded-lg group">
+                    <input type="checkbox" id="goal-${index}" class="ml-3 h-5 w-5 text-indigo-600" ${goal.completed ? 'checked' : ''} data-index="${index}">
+                    <label for="goal-${index}" class="flex-1 text-gray-700 ${goal.completed ? 'line-through text-gray-400' : ''}">${goal.text}</label>
+                    <button class="edit-goal-btn text-gray-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" data-index="${index}">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                    </button>
+                    <button class="delete-goal-btn text-gray-400 hover:text-red-600 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" data-index="${index}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                    </button>
+                </div>
+            `).join('');
+            
+            ui.dailyGoals.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', () => toggleGoalCompletion(cb.dataset.index)));
+            ui.dailyGoals.querySelectorAll('.edit-goal-btn').forEach(btn => btn.addEventListener('click', () => editGoal(btn.dataset.index)));
+            ui.dailyGoals.querySelectorAll('.delete-goal-btn').forEach(btn => btn.addEventListener('click', () => deleteGoal(btn.dataset.index)));
+        };
+
+        const renderCategories = async (newCategories = null) => {
+            if (newCategories) {
+                categories = newCategories;
+                await saveStateToFirestore();
+            }
+            ui.categoryList.innerHTML = categories.map(cat => `
+                <div class="flex items-center justify-between p-2 bg-gray-100 rounded-md">
+                    <span>${cat.name}</span>
+                    <button class="delete-category-btn text-red-500 hover:text-red-700" data-id="${cat.id}">&times;</button>
+                </div>
+            `).join('');
+            ui.categoryList.querySelectorAll('.delete-category-btn').forEach(btn => btn.addEventListener('click', async () => {
+                const id = parseInt(btn.dataset.id);
+                if (activities.some(a => a.categoryId === id)) { Swal.fire('امکان حذف نیست', 'این دسته‌بندی توسط یک یا چند فعالیت استفاده شده است.', 'warning'); return; }
+                const updatedCategories = categories.filter(c => c.id !== id);
+                await renderCategories(updatedCategories);
+            }));
+            const optionsHtml = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            ui.taskCategoryLive.innerHTML = `<option value="" disabled selected>انتخاب دسته‌بندی</option>${optionsHtml}`;
+            ui.manualTaskCategory.innerHTML = `<option value="" disabled selected>انتخاب دسته‌بندی</option>${optionsHtml}`;
+        };
+
+        // --- Tab Switching & Event Listeners ---
+        const switchTab = (activeTab) => {
+            ui.productivityView.classList.toggle('hidden', activeTab !== 'productivity');
+            ui.reportView.classList.toggle('hidden', activeTab === 'productivity');
+            ui.productivityTabBtn.classList.toggle('active', activeTab === 'productivity');
+            ui.reportTabBtn.classList.toggle('active', activeTab !== 'productivity');
+            if (activeTab !== 'productivity') {
+                displayReportForDate(selectedReportDate);
+            }
+        };
+
+        async function displayReportForDate(date) {
+            selectedReportDate = date;
+            ui.reportDatePicker.value = toDateString(date);
+            const data = await loadDataForDate(date);
+            renderReportContent(data, date);
+        }
+
+        ui.reportDatePicker.addEventListener('change', (e) => {
+            const newDate = new Date(e.target.value);
+            newDate.setMinutes(newDate.getMinutes() + newDate.getTimezoneOffset());
+            displayReportForDate(newDate);
+        });
+
+        ui.prevDayBtn.addEventListener('click', () => {
+            const newDate = new Date(selectedReportDate);
+            newDate.setDate(newDate.getDate() - 1);
+            displayReportForDate(newDate);
+        });
+
+        ui.nextDayBtn.addEventListener('click', () => {
+            const newDate = new Date(selectedReportDate);
+            newDate.setDate(newDate.getDate() + 1);
+            displayReportForDate(newDate);
+        });
+
+        ui.startBtn.addEventListener('click', startTimer);
+        ui.stopBtn.addEventListener('click', stopTimer);
+        ui.manualAddBtn.addEventListener('click', addManualTask);
+        ui.distractionBtn.addEventListener('click', async () => {
+            distractionCount++;
+            await saveStateToFirestore();
+            updateUI();
+        });
+        ui.decreaseDistractionBtn.addEventListener('click', async () => {
+            if (distractionCount > 0) {
+                distractionCount--;
+                await saveStateToFirestore();
+                updateUI();
+            }
+        });
+        ui.addGoalBtn.addEventListener('click', addGoal);
+        ui.addCategoryBtn.addEventListener('click', async () => {
+            const name = ui.newCategoryName.value.trim();
+            if (name && !categories.some(c => c.name === name)) {
+                const newCategories = [...categories, { id: Date.now(), name }];
+                await renderCategories(newCategories);
+                ui.newCategoryName.value = '';
+            }
+        });
+        ui.productivityTabBtn.addEventListener('click', () => switchTab('productivity'));
+        ui.reportTabBtn.addEventListener('click', () => switchTab('report'));
+        
+        // --- Pomodoro Logic ---
+        const updatePomodoroDisplay = () => ui.pomodoroTimer.textContent = formatPomodoroTime(pomodoroTime);
+
+        const startPomodoro = () => {
+            if (!isPomodoroPaused) return;
+            isPomodoroPaused = false;
+            ui.pomodoroStart.disabled = true;
+            ui.pomodoroPause.disabled = false;
+            pomodoroInterval = setInterval(() => {
+                pomodoroTime--;
+                updatePomodoroDisplay();
+                if (pomodoroTime <= 0) {
+                    clearInterval(pomodoroInterval);
+                    new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg').play();
+                    isPomodoroWork = !isPomodoroWork;
+                    pomodoroTime = isPomodoroWork ? 25 * 60 : 5 * 60;
+                    Swal.fire(isPomodoroWork ? 'زمان کار!' : 'زمان استراحت!', isPomodoroWork ? '۲۵ دقیقه تمرکز کامل!' : '۵ دقیقه استراحت کنید.', 'success');
+                    resetPomodoro();
+                }
+            }, 1000);
+        };
+
+        const pausePomodoro = () => {
+            isPomodoroPaused = true;
+            ui.pomodoroStart.disabled = false;
+            ui.pomodoroPause.disabled = true;
+            clearInterval(pomodoroInterval);
+        };
+
+        const resetPomodoro = () => {
+            pausePomodoro();
+            isPomodoroWork = true;
+            pomodoroTime = 25 * 60;
+            updatePomodoroDisplay();
+        };
+
+        ui.pomodoroStart.addEventListener('click', startPomodoro);
+        ui.pomodoroPause.addEventListener('click', pausePomodoro);
+        ui.pomodoroReset.addEventListener('click', resetPomodoro);
+
+        // --- Initialization ---
+        async function initializeAppAndAuth() {
+            try {
+                await setPersistence(auth, browserLocalPersistence);
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        if (isAppReady) return;
+                        userId = user.uid;
+                        await loadInitialData();
+                        ui.loadingOverlay.style.display = 'none';
+                        ui.mainContent.style.opacity = '1';
+                        ui.reportDatePicker.value = toDateString(new Date());
+                    } else {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Fatal Authentication Error:", error);
+                ui.loadingOverlay.innerHTML = `<div class="text-center"><p class="text-red-600 font-bold">خطا در احراز هویت.</p><p>لطفاً صفحه را رفرش کنید.</p></div>`;
+            }
+        }
+
+        initializeAppAndAuth();
+
+    </script>
+</body>
+</html>
