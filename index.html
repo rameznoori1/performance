@@ -90,11 +90,6 @@
                 <svg class="w-6 h-6 ml-3" viewBox="0 0 48 48"><path fill="#4285F4" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"></path><path fill="#34A853" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"></path><path fill="#FBBC05" d="M27 48c4.107 0 7.746-1.577 10.32-4.18l-5.79-4.59C30.552 40.478 28.272 42 24 42c-4.778 0-8.841-2.655-10.755-6.44l-6.522 5.025C9.505 43.472 16.227 48 27 48z"></path><path fill="#EA4335" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l5.79 4.59C42.022 35.17 44 30.023 44 24c0-1.341-.138-2.65-.389-3.917z"></path></svg>
                 ورود با حساب گوگل
             </button>
-            <div class="mt-6 p-3 bg-yellow-100 border border-yellow-300 rounded-lg text-sm text-yellow-800 text-right">
-                <p class="font-bold">راهنمای رفع خطا:</p>
-                <p>اگر با خطای ورود مواجه شدید، لطفاً دامنه زیر را به لیست "Authorized domains" در تنظیمات Authentication پروژه Firebase خود اضافه کنید:</p>
-                <p id="auth-domain-helper" class="font-mono text-center bg-yellow-200 p-1 rounded mt-2 break-all"></p>
-            </div>
         </div>
     </div>
 
@@ -219,11 +214,18 @@
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : { /* YOUR FALLBACK CONFIG HERE */ };
-        
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyBpgySrjbA3YMcoRWmB7NR6_trhQ_AdcwU",
+          authDomain: "performance-980e1.firebaseapp.com",
+          projectId: "performance-980e1",
+          storageBucket: "performance-980e1.firebasestorage.app",
+          messagingSenderId: "590374698817",
+          appId: "1:590374698817:web:08b0878e132fa37f83abc0"
+        };
+
+        // Use the appId from your specific config
+        const appId = firebaseConfig.appId;
 
         // --- Firebase Initialization ---
         const app = initializeApp(firebaseConfig);
@@ -249,7 +251,6 @@
             mainContent: document.getElementById('main-content'),
             userDisplay: document.getElementById('user-display'),
             userAvatar: document.getElementById('user-avatar'),
-            authDomainHelper: document.getElementById('auth-domain-helper'),
             taskName: document.getElementById('task-name'),
             startBtn: document.getElementById('start-btn'),
             stopBtn: document.getElementById('stop-btn'),
@@ -773,9 +774,6 @@
 
         // --- Initialization and Auth State Change Handler ---
         async function startApp() {
-            // Display the current hostname to help the user authorize it.
-            ui.authDomainHelper.textContent = window.location.hostname || 'Could not detect domain';
-
             try {
                 await setPersistence(auth, browserLocalPersistence);
                 onAuthStateChanged(auth, async (user) => {
